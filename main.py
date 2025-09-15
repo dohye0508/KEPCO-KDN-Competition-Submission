@@ -1,34 +1,37 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-psutil 기반 시스템 리소스 모니터
-- CPU 사용률
-- 메모리 사용률
-- 디스크 사용률
-- 네트워크 전송/수신 속도
+실시간 전력/자원 기록기 → CSV 저장
+- psutil로 CPU/메모리 사용률 기록 (전력은 Power Gadget 있으면 연동 가능)
+- 1초마다 한 줄씩 CSV에 추가
 """
 
 import psutil
 import time
-import datetime as dt
+import datetime
+import csv
+from pathlib import Path
+
+LOGFILE = Path("resource_log.csv")
 
 def main():
-    prev_net = psutil.net_io_counters()
-    prev_sent, prev_recv = prev_net.bytes_sent, prev_net.bytes_recv
-
-    print("timestamp, CPU%, MEM%, DISK%, NET_sent(KB/s), NET_recv(KB/s)")
-
-    while True:
-        ts = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        cpu = psutil.cpu_percent(interval=1)
-        mem = psutil.virtual_memory().percent
-        disk = psutil.disk_usage('/').percent
-
-        net = psutil.net_io_counters()
-        sent_per_s = (net.bytes_sent - prev_sent) / 1024.0
-        recv_per_s = (net.bytes_recv - prev_recv) / 1024.0
-        prev_sent, prev_recv = net.bytes_sent, net.bytes_recv
-
-        print(f"{ts}, {cpu:.1f}, {mem:.1f}, {disk:.1f}, {sent_per_s:.1f}, {recv_per_s:.1f}")
+    # 파일이 없으면 새로 만들고, 있으면 이어쓰기
+    new_file = not LOGFILE.exists()
+    with LOGFILE.open("a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        # 헤더는 파일 처음 만들 때만
+        if new_file:
+            writer.writerow(["timestamp", "cpu_percent", "mem_percent"])
+        try:
+            while True:
+                ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                cpu = psutil.cpu_percent(interval=1)
+                mem = psutil.virtual_memory().percent
+                writer.writerow([ts, cpu, mem])
+                f.flush()  # 즉시 저장
+                print(ts, cpu, mem)
+        except KeyboardInterrupt:
+            print("\n종료됨.")
 
 if __name__ == "__main__":
     main()
