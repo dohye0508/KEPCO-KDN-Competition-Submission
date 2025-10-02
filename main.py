@@ -25,7 +25,7 @@ def main():
         try:
             while True:
                 ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                cpu = psutil.cpu_percent(interval=1)
+                cpu = psutil.cpu_percent(interval=20)
                 mem = psutil.virtual_memory().percent
                 writer.writerow([ts, cpu, mem])
                 f.flush()  # 즉시 저장
